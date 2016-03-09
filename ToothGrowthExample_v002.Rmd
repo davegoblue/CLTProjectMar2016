@@ -1,0 +1,187 @@
+---
+title: "Guinea Pig Tooth Length by Dose and Delivery Method"
+author: "davegoblue"
+date: "March 9, 2016"
+output: html_document
+---
+
+## Overview and Synopsis  
+This analysis explores variability in Guinea Pig tooth length vs. dose and delivery method based on the ToothGrowth dataset available in the R datasets package.  
+
+There is a significant (p<0.001) difference in tooth growth for each pairwise comparison of doses 0.5, 1.0, and 2.0.  However, we fail to reject the null hypothesis (p=0.06) that tooth growth is independent of delivery method.  
+  
+## Analysis  
+###_Data Loading and Exploratory Data Analysis_  
+The prepackaged dataset is loaded using a data() call and briefly examined.  See Appendix for R code (the below are created with echo=FALSE).  
+```{r, echo=FALSE}
+data(ToothGrowth)
+str(ToothGrowth)
+print(paste0("There are ",sum(is.na(ToothGrowth))," NA in the data"))
+table(ToothGrowth$supp,ToothGrowth$dose)
+```
+  
+The dataset contains 60 observations across 3 variables (len=tooth length, supp=delivery method, dose=dose). There are no NA, with 10 observations for each overlap of dose vs. delivery (supp).  
+
+Additionally, a histogram and boxplot are created for simple exploratory data analysis (see Appendix for R code, this was run with echo=FALSE):  
+
+```{r, echo=FALSE}
+par(mfcol=c(1,2))
+hist(ToothGrowth$len,col="light blue",main="Guinea Pig Tooth Length",
+     xlab="Length",cex.axis=0.75
+     )
+boxplot(len ~ dose + supp, data=ToothGrowth,
+        col="light blue",las=2,cex.axis=0.75
+        )
+title(main="Guinea Pig Tooth Length Boxplot",
+      ylab="Tooth Length",xlab="Dose and Method"
+      )
+par(mfcol=c(1,1))
+```
+
+While tooth length is not normally distributed, the data are roughly mounded and symmetric.  At a glance, tooth length appears to vary depending on dose (definitely) and method (possibly).  
+  
+###_Key Assumptions and Questions_  
+While ANOVA, Tukey HSD, or non-parametric tests might be appropriate given our data, we are asked to ignore these.  We instead seek to answer two questions with the data:  
+
+* Does tooth length significantly vary with method?  
+* Does tooth length significantly vary with dose?  
+
+With n=10 in each bucket and seeming differences in variance, we would be on the very low end of trying to detect interaction (dose * method).  Instead, we use pairwise t-tests to answer the questions above, with alpha=0.05 and Bonferroni correction for dose (there are 3 comparisons).
+
+The following assumptions appear to support our approach:  
+
+* While non-normal, tooth length is roughly symmetric, mound shaped, and without outliers  
+* While we ignore interaction, our experiment design helps control for it with equal numbers of each dose in each method.  This reduces the risk that dose and method confound one another  
+* With n=20 and n=30 per group, the T-test will be reasonably close to starting to follow CLT  
+
+###_Hypothesis Tests and Confidence Intervals_  
+The null hypotheses are that 1) tooth length is independent of dose, and 2) tooth length is independent of method.  The alternative hypotheses are that dosage or method influence tooth length (two-sided).  We assume alpha=0.05 and apply a Bonferroni adjustment for the three comparisons of dose.  
+
+####__Hypothesis Test #1: Length vs. Delivery Method__
+Ho: There is no difference in tooth length by delivery method (supp)  
+Ha: There is a difference in tooth length by delivery method  
+alpha: 0.05, two-sided
+
+We run a t-test for tooth length vs. delivery method assuming unequal variance and note that the 95% confidence interval overlaps with zero difference.  We fail to reject the null hypothesis that there is no difference in tooth length by delivery method.  See Appendix for R code (run here with echo=FALSE)
+
+```{r, echo=FALSE}
+tMethod <- t.test(len ~ supp, data=ToothGrowth)
+print(paste0("The 95% CI for difference in means by delivery method is: ",
+             round(tMethod$conf.int[[1]],1)," to ",
+             round(tMethod$conf.int[[2]],1)
+             )
+      )
+print(paste0("The associated p-value is ", round(tMethod$p.value,3)))
+```
+  
+####__Hypothesis Test #2: Length vs. Dose__
+Ho: There is no difference in tooth length by dose  
+Ha: There is a difference in tooth length by dose  
+alpha: 0.05, two-sided, Bonferroni adjusted to keep FEWR=alpha
+
+We run pairwise t-tests for tooth length vs. dose assuming unequal variance with the Bonferroni adjustment (3 total comparisons).  The p-values are miniscule for each of the comparisons, and we thus reject the null hypothesis in favor of the alternate hypothesis that tooth length varies with dose.  
+
+```{r}
+tDose <- pairwise.t.test(ToothGrowth$len , ToothGrowth$dose , 
+                         pool.sd=FALSE, p.adjust.method = "bonferroni")
+tDose$p.value
+```
+  
+## Conclusion  
+We conclude that dosing is a significant driver of tooth growth in guinea pigs, and we fail to reject the null hypothesis that delivery method is not a significant driver of tooth growth in guinea pigs.  
+  
+**Technical Note: ** My machine considers the executable required to run knit2pdf to be potential malware.  This PDF is instead generated using Acrobat DC to convert the html output of knit2html.  
+
+***
+  
+## Appendix
+###_R Code for Exploratory Data Analysis_  
+The below code was run using echo=FALSE to load and examine the data (first chunk) and then to create a histogram and boxplot (second chunk).  It is shown here using eval=FALSE for reference:  
+
+```{r, eval=FALSE}
+data(ToothGrowth)
+str(ToothGrowth)
+print(paste0("There are ",sum(is.na(ToothGrowth))," NA in the data"))
+table(ToothGrowth$supp,ToothGrowth$dose)
+```
+  
+```{r, eval=FALSE}
+par(mfcol=c(1,2))
+hist(ToothGrowth$len,col="light blue",main="Guinea Pig Tooth Length",
+     xlab="Length",cex.axis=0.75
+     )
+boxplot(len ~ dose + supp, data=ToothGrowth,
+        col="light blue",las=2,cex.axis=0.75
+        )
+title(main="Guinea Pig Tooth Length Boxplot",
+      ylab="Tooth Length",xlab="Dose and Method"
+      )
+par(mfcol=c(1,1))
+```
+  
+  
+###_R Code for Hypothesis Test #1: Tooth Length vs. Method_  
+The below code was run using echo=FALSE to create the confidence interval and p-value for comparing the mean length by the two method.  It is shown here using eval=FALSE for reference:  
+
+```{r, eval=FALSE}
+tMethod <- t.test(len ~ supp, data=ToothGrowth)
+print(paste0("The 95% CI for difference in means by delivery method is: ",
+             round(tMethod$conf.int[[1]],1)," to ",
+             round(tMethod$conf.int[[2]],1)
+             )
+      )
+print(paste0("The associated p-value is ", round(tMethod$p.value,3)))
+```
+  
+  
+###_Extension of Hypothesis Test #2: Length vs. Dose_
+Since we found significant differences in tooth length vs. dose (two-sided), it may be interesting to explore the impact of these differences further.  We first examine the mean tooth length by dosage and see that there is a positive relationship where tooth growth is higher for higher dose:  
+
+```{r}
+tapply(ToothGrowth$len,ToothGrowth$dose,FUN=mean)
+```
+
+We run t-tests for each of the 3 possible pairings of dosage:  
+```{r}
+tDose05_10 <- t.test(len ~ dose, data=ToothGrowth[ToothGrowth$dose != 2,])
+tDose05_20 <- t.test(len ~ dose, data=ToothGrowth[ToothGrowth$dose != 1,])
+tDose10_20 <- t.test(len ~ dose, data=ToothGrowth[ToothGrowth$dose != 0.5,])
+```
+
+We then create a data frame for the outputs, being mindful to convert the order to large dose minus small dose (the opposite of what our t-test ran):  
+
+```{r}
+diff05_10 <- tDose05_10$estimate[2] - tDose05_10$estimate[1]
+diff05_20 <- tDose05_20$estimate[2] - tDose05_20$estimate[1]
+diff10_20 <- tDose10_20$estimate[2] - tDose10_20$estimate[1]
+ci05_10 <- -tDose05_10$conf.int ## Negate so it is 1.0 vs. 0.5
+ci05_20 <- -tDose05_20$conf.int ## Negate so it is 2.0 vs. 0.5
+ci10_20 <- -tDose10_20$conf.int ## Negate so it is 2.0 vs. 1.0
+
+tDoseAll <- data.frame(dataCompare=c("1.0 vs. 0.5","2.0 vs. 0.5",
+                                     "2.0 vs. 1.0"
+                                     ),
+                       meanDiff=c(diff05_10,diff05_20,diff10_20),
+                       highCI=c(ci05_10[1],ci05_20[1],ci10_20[1]),
+                       lowCI=c(ci05_10[2],ci05_20[2],ci10_20[2])
+                       )
+```
+
+And, we examine the data as well as plotting these 95% confidence intervals using ggplot:  
+```{r}
+foo <- function(changethis) { round(changethis,1) }
+tDosePrint <- tDoseAll
+tDosePrint[,2:4] <- apply(tDosePrint[,2:4],2,FUN=foo)
+tDosePrint[,c(1,4,2,3)]
+
+library(ggplot2)
+g <- ggplot(data=tDoseAll, mapping=aes(x=meanDiff,y=dataCompare))
+g <- g + geom_point(size=5,col="blue") + 
+         geom_errorbarh(aes(xmax=highCI, xmin=lowCI))
+g + labs(title="Differnce in Mean Guinea Pig Tooth Length by Dose",
+         x="Differnce in Tooth Length (Mean and CI)",
+         y="Dosing Comparison"
+         ) + xlim(0,20)
+```
+  
+Due caution should be used in interpretation since the Bonferroni correction is *not* applied while creating these CI.  Nonetheless, the data confirm that there is a large, positive relationship between increasing dose and increasing tooth length.  
