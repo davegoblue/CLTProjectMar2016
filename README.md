@@ -4,5 +4,5 @@ This repo is to store the results of a few analyses for a statistical inference 
 * Exploration of the exponential function and the CLT  
 * Exploration of the R datasets package ToothGrowth  
 
-###_10-MAR-2016_  
+####_10-MAR-2016_  
 * Posted the .Rmd and PDF for the Central Limit Theorem assignment
